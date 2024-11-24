@@ -1,0 +1,11 @@
+# Ignore the compiled executable files
+/main
+/product
+/warehouse
+
+# Ignore all executables
+*.out
+*.exe
+
+# Or, you can ignore all files in the build directory, if you have one
+/build/
