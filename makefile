@@ -1,13 +1,19 @@
-all: main warehouse product
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -pthread
 
-main: main.cpp utils.cpp
-	g++ -o main main.cpp utils.cpp -std=c++17
+SRC_DIR = src
+BUILD_DIR = build
 
-warehouse: warehouse.cpp utils.cpp
-	g++ -o warehouse warehouse.cpp utils.cpp -std=c++17
+SRC_FILES = $(SRC_DIR)/main.cpp $(SRC_DIR)/ProductData.cpp $(SRC_DIR)/WarehouseProcessor.cpp
+OBJ_FILES = $(SRC_FILES:.cpp=.o)
 
-product: product.cpp utils.cpp
-	g++ -o product product.cpp utils.cpp -std=c++17
+EXEC = warehouse_manager
+
+$(EXEC): $(OBJ_FILES)
+	$(CXX) $(CXXFLAGS) $(OBJ_FILES) -o $(BUILD_DIR)/$(EXEC)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f main warehouse product
+	rm -f $(OBJ_FILES) $(BUILD_DIR)/$(EXEC)
