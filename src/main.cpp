@@ -2,10 +2,12 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <filesystem> // For std::filesystem
 #include "ProductData.h"
 #include "WarehouseProcessor.h"
 
 using namespace std;
+namespace fs = std::filesystem;
 
 int main() {
     // Read the Parts.csv file to get a list of product names
@@ -23,12 +25,16 @@ int main() {
     // Create ProductData objects for each product in Parts.csv
     vector<ProductData> products;
     for (const string& product_name : product_names) {
-        products.emplace_back(product_name, 0);  // Price will be updated dynamically during warehouse file processing
+        products.emplace_back(product_name, 0);  // Profit starts at 0 for all products
     }
 
-    // Process all dynamic warehouse CSV files (assuming they are in the 'stores' folder)
-    for (const string& warehouse_file : {"stores/warehouse_1.csv", "stores/warehouse_2.csv"}) { // Add more warehouse files as needed
-        WarehouseProcessor::processWarehouseFile(warehouse_file, products);
+    // Process all CSV files dynamically detected in the 'stores' folder
+    for (const auto& entry : fs::directory_iterator("stores")) {
+        if (entry.path().extension() == ".csv" && entry.path().filename() != "Parts.csv") {
+            cout << "reading file:" + entry.path().string() << endl;
+            
+            WarehouseProcessor::processWarehouseFile(entry.path().string(), products);
+        }
     }
 
     // Display product list and prompt user to choose a product
