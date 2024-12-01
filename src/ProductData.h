@@ -2,20 +2,20 @@
 #define PRODUCTDATA_H
 
 #include <string>
+#include <vector>
 
 class ProductData {
 public:
-    std::string name;
-    double price;          // price per unit
-    int quantity;          // quantity of product
-    double total_profit;   // total profit from all warehouses
-    int total_remaining;   // total remaining stock from all warehouses
+    std::string productName;
+    double price;
+    int quantity;
+    double totalProfit;
+    int remainingStock;
 
-    ProductData(const std::string& product_name, double product_price)
-        : name(product_name), price(product_price), total_profit(0), total_remaining(0) {}
+    ProductData(const std::string& name, double price, int quantity);
 
-    void addTransaction(double output_price, int output_quantity, double input_price);
+    void addTransaction(int qtySold, double salePrice);
     void printProductInfo() const;
 };
 
-#endif
+#endif // PRODUCTDATA_H
