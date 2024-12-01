@@ -9,4 +9,4 @@ namespace MapperFileProcessor {
 
 }
 
-#endif // MAPPER_FILE_PROCESSOR_H
+#endif

@@ -1,145 +1,109 @@
-#include "WarehouseProcessor.h"
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <string>
 #include <vector>
-#include <map>
-#include <algorithm>
-#include <deque>
-#include <tinyxml2.h>
+#include <string>
+#include <filesystem> 
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstdlib>
 
-using namespace std;
-using namespace tinyxml2;
+namespace fs = std::filesystem;
 
-// Function to process a warehouse file (CSV) and update the product list
-void WarehouseProcessor::processWarehouseFile(const std::string& file_path, std::vector<ProductData>& products) {
-    std::ifstream file(file_path);
-    std::string line;
-    std::map<std::string, std::deque<std::pair<double, int>>> input_transactions;
+void logMessage(const std::string& message);
 
-    while (std::getline(file, line)) {
-        std::stringstream ss(line);
-        std::string product_name;
-        double price;
-        int quantity;
-        std::string operation;
+void spawnMapperProcesses(const std::vector<std::string>& warehouseFiles, int writePipe[]);
+void spawnReducerProcess(int readPipe[]);
 
-        std::getline(ss, product_name, ',');
-        ss >> price;
-        ss.ignore();
-        ss >> quantity;
-        ss.ignore();
-        ss >> operation;
+int main() {
+    std::vector<std::string> warehouseFiles;
 
-        auto it = std::find_if(products.begin(), products.end(), [&](const ProductData& product) {
-            return product.name == product_name;
-        });
-
-        if (it != products.end()) {
-            if (operation == "output") {
-                int remaining_quantity = quantity;
-                double total_output_profit = 0;
-                while (remaining_quantity > 0 && !input_transactions[product_name].empty()) {
-                    auto& [input_price, input_quantity] = input_transactions[product_name].front();
-                    int used_quantity = std::min(remaining_quantity, input_quantity);
-                    total_output_profit += used_quantity * (price - input_price);
-
-                    input_quantity -= used_quantity;
-                    remaining_quantity -= used_quantity;
-
-                    if (input_quantity == 0) {
-                        input_transactions[product_name].pop_front(); // Remove fully used transaction
-                    }
-                }
-
-                it->total_remaining -= (quantity - remaining_quantity);
-                it->total_profit += total_output_profit;
-            } else {
-                input_transactions[product_name].emplace_back(price, quantity);
-                it->total_remaining += quantity;
-            }
+    for (const auto& entry : fs::directory_iterator("stores")) {
+        if (entry.path().extension() == ".csv" && entry.path().filename() != "Parts.csv") {
+            warehouseFiles.push_back(entry.path().string());
         }
     }
 
-    for (const auto& product : products) {
-        std::cout << "Product: " << product.name
-                  << ", Remaining Stock: " << product.total_remaining
-                  << ", Total Profit: " << product.total_profit << std::endl;
+    if (warehouseFiles.empty()) {
+        logMessage("No warehouse CSV files found in 'stores' directory.");
+        return 1;
+    }
+
+    logMessage("Found " + std::to_string(warehouseFiles.size()) + " warehouse CSV files.");
+
+    int mapperPipe[2];
+
+    if (pipe(mapperPipe) == -1) {
+        logMessage("Pipe creation failed");
+        perror("pipe failed");
+        return 1;
+    }
+    logMessage("Pipe created successfully.");
+
+
+    spawnMapperProcesses(warehouseFiles, mapperPipe);
+
+    spawnReducerProcess(mapperPipe);
+
+    close(mapperPipe[0]);
+    close(mapperPipe[1]);
+
+    logMessage("Closed pipe in the parent process.");
+    while (wait(NULL) > 0);
+
+    logMessage("Parent process waiting for all child processes to finish.");
+
+    return 0;
+}
+
+void spawnMapperProcesses(const std::vector<std::string>& warehouseFiles, int writePipe[]) {
+    for (const auto& file : warehouseFiles) {
+        pid_t pid = fork();
+        if (pid == 0) { 
+            close(writePipe[0]); 
+            dup2(writePipe[1], STDOUT_FILENO); 
+            close(writePipe[1]);
+
+            logMessage("Mapper process spawned for file: " + file);
+
+            execl("./MapperProcess", "./MapperProcess", file.c_str(), NULL);
+            logMessage("execl failed for MapperProcess");
+            perror("execl failed");
+            exit(1);
+        } else if (pid > 0) {
+            logMessage("Forked a mapper process with PID: " + std::to_string(pid));
+        } else {
+            logMessage("Failed to fork mapper process.");
+            perror("fork failed");
+        }
     }
 }
 
-// Function to display a menu of products for the user to select
-void WarehouseProcessor::displayProductMenu(const std::vector<ProductData>& products) {
-    std::cout << "Select a product to view profit and remaining stock:" << std::endl;
-    int index = 1;
-    for (const auto& product : products) {
-        std::cout << index++ << ". " << product.name << std::endl;
-    }
-}
+void spawnReducerProcess(int readPipe[]) {
+    pid_t pid = fork();
+    if (pid == 0) { 
+        close(readPipe[1]);
+        dup2(readPipe[0], STDIN_FILENO);
+        close(readPipe[0]);
 
-// Function to display profit and stock for the selected product
-void WarehouseProcessor::displayProfitAndStock(const std::vector<ProductData>& products, int product_choice) {
-    if (static_cast<size_t>(product_choice) >= 1 && static_cast<size_t>(product_choice) <= products.size()) {
-        products[product_choice - 1].printProductInfo();
+        logMessage("Reducer process spawned.");
+
+        execl("./ReducerProcess", "./ReducerProcess", NULL);
+        logMessage("execl failed for ReducerProcess");
+        perror("execl failed");
+        exit(1);
+    } else if (pid > 0) {
+        logMessage("Forked a reducer process with PID: " + std::to_string(pid));
     } else {
-        std::cout << "Invalid product choice!" << std::endl;
+        logMessage("Failed to fork reducer process.");
+        perror("fork failed");
     }
 }
 
-// Function to save product data to an XML file
+void logMessage(const std::string& message) {
+    time_t now = time(0);
+    char* dt = ctime(&now);
+    dt[strlen(dt) - 1] = '\0'; 
 
-void WarehouseProcessor::saveProductsToText(const std::vector<ProductData>& products, const std::string& filePath) {
-    std::ofstream outFile(filePath);
-
-    if (!outFile) {
-        std::cerr << "Error: Unable to open file for writing: " << filePath << std::endl;
-        return;
-    }
-
-    for (const auto& product : products) {
-        outFile << "Product: " << product.name
-                << ", Total Profit: " << product.total_profit
-                << ", Remaining Stock: " << product.total_remaining
-                << std::endl;
-    }
-
-    outFile.close();
-    std::cout << "Product data saved to " << filePath << std::endl;
+    std::cerr << "[" << dt << "] " << message << std::endl;
+    std::cerr.flush(); 
 }
-
-
-
-// void WarehouseProcessor::saveProductsToXML(const std::vector<ProductData>& products, const std::string& file_path) {
-//     XMLDocument doc;
-
-//     // Create XML declaration
-//     XMLNode* decl = doc.NewDeclaration();
-//     doc.InsertFirstChild(decl);
-
-//     // Create root element <Products>
-//     XMLElement* root = doc.NewElement("Products");
-//     doc.InsertEndChild(root);
-
-//     // Add product elements
-//     for (const auto& product : products) {
-//         XMLElement* productElement = doc.NewElement("Product");
-
-//         XMLElement* name = doc.NewElement("Name");
-//         name->SetText(product.name.c_str());
-//         productElement->InsertEndChild(name);
-
-//         XMLElement* profit = doc.NewElement("TotalProfit");
-//         profit->SetText(product.total_profit);
-//         productElement->InsertEndChild(profit);
-
-//         XMLElement* stock = doc.NewElement("TotalRemaining");
-//         stock->SetText(product.total_remaining);
-//         productElement->InsertEndChild(stock);
-
-//         root->InsertEndChild(productElement);
-//     }
-
-//     // Save the XML file
-//     doc.SaveFile(file_path.c_str());
-// }

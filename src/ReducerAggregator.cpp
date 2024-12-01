@@ -20,9 +20,6 @@ void ReducerAggregator::aggregateDataFromPipe() {
         ss >> quantity;
         ss.ignore();
         ss >> operation;
-
-        // Aggregate data for each product (simplified example)
         std::cout << "Aggregating data for: " << product_name << std::endl;
-        // Perform actual aggregation logic here
     }
 }

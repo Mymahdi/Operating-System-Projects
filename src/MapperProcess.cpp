@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
@@ -17,24 +18,10 @@ int main(int argc, char* argv[]) {
 
     std::string line;
     while (std::getline(file, line)) {
-        std::istringstream ss(line);
-        std::string productName, operation;
-        double price;
-        int quantity;
-
-        std::getline(ss, productName, ',');
-        ss >> price;
-        ss.ignore();
-        ss >> quantity;
-        ss.ignore();
-        ss >> operation;
-
-        if (operation == "input" || operation == "output") {
-            // Emit key-value pair
-            std::cout << productName << "," << price << "," << quantity << "," << operation << std::endl;
-        }
+        std::cout << line << std::endl;
     }
 
     file.close();
+    close(STDOUT_FILENO);
     return 0;
 }

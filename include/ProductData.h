@@ -18,4 +18,4 @@ public:
     void printProductInfo() const;
 };
 
-#endif // PRODUCTDATA_H
+#endif
