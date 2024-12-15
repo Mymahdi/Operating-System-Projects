@@ -3,14 +3,39 @@
 #include <cmath>
 #include <sndfile.h>
 #include <chrono>
+#include <functional>
 
 using namespace std;
 using namespace std::chrono;
 
-// Filter Parameters
+// Constants for filters
 const double BANDPASS_DELTA = 0.1;
 const double NOTCH_F0 = 1000.0;
 const int NOTCH_ORDER = 2;
+
+// Read WAV file
+vector<double> readAudioFile(const string& fileName, SF_INFO& sfinfo) {
+    SNDFILE* file = sf_open(fileName.c_str(), SFM_READ, &sfinfo);
+    if (!file) {
+        cerr << "Error: Could not open input file " << fileName << endl;
+        exit(EXIT_FAILURE);
+    }
+    vector<double> data(sfinfo.frames);
+    sf_read_double(file, data.data(), sfinfo.frames);
+    sf_close(file);
+    return data;
+}
+
+// Write WAV file
+void writeAudioFile(const string& fileName, const vector<double>& data, SF_INFO& sfinfo) {
+    SNDFILE* file = sf_open(fileName.c_str(), SFM_WRITE, &sfinfo);
+    if (!file) {
+        cerr << "Error: Could not write output file " << fileName << endl;
+        exit(EXIT_FAILURE);
+    }
+    sf_write_double(file, data.data(), data.size());
+    sf_close(file);
+}
 
 // Band-pass Filter
 void bandPassFilter(vector<double>& data, int sampleRate) {
@@ -30,53 +55,24 @@ void notchFilter(vector<double>& data, int sampleRate) {
     }
 }
 
-// Read Audio File
-vector<double> readAudioFile(const string& fileName, SF_INFO& sfinfo) {
-    SNDFILE* file = sf_open(fileName.c_str(), SFM_READ, &sfinfo);
-    if (!file) {
-        cerr << "Error: Could not open input file " << fileName << endl;
-        exit(EXIT_FAILURE);
+// IIR Filter
+void iirFilter(vector<double>& data, int) {
+    double alpha = 0.5;
+    for (size_t i = 1; i < data.size(); ++i) {
+        data[i] = alpha * data[i] + (1 - alpha) * data[i - 1];
     }
-    vector<double> data(sfinfo.frames);
-    sf_read_double(file, data.data(), sfinfo.frames);
-    sf_close(file);
-    return data;
 }
 
-// Write Audio File
-void writeAudioFile(const string& fileName, const vector<double>& data, SF_INFO& sfinfo) {
-    SNDFILE* file = sf_open(fileName.c_str(), SFM_WRITE, &sfinfo);
-    if (!file) {
-        cerr << "Error: Could not write output file " << fileName << endl;
-        exit(EXIT_FAILURE);
-    }
-    sf_write_double(file, data.data(), data.size());
-    sf_close(file);
-}
-
-// Process Filter and Measure Execution Time
-void processFilter(const string& filterName, const vector<double>& inputData, SF_INFO sfinfo, 
-                   void (*filterFunc)(vector<double>&), const string& outputFile) {
-    vector<double> data = inputData;
+// Function to measure filter execution time
+double processFilter(const string& filterName, const string& outputFile, vector<double> inputData, SF_INFO& sfinfo, 
+                     const function<void(vector<double>&, int)>& filterFunc) {
     auto start = high_resolution_clock::now();
-    filterFunc(data);
+    filterFunc(inputData, sfinfo.samplerate);
     auto end = high_resolution_clock::now();
-
-    writeAudioFile(outputFile, data, sfinfo);
-    cout << filterName << " Time: " 
-         << duration_cast<milliseconds>(end - start).count() << " ms" << endl;
-}
-
-void processFilterWithRate(const string& filterName, const vector<double>& inputData, SF_INFO sfinfo, 
-                           void (*filterFunc)(vector<double>&, int), const string& outputFile) {
-    vector<double> data = inputData;
-    auto start = high_resolution_clock::now();
-    filterFunc(data, sfinfo.samplerate);
-    auto end = high_resolution_clock::now();
-
-    writeAudioFile(outputFile, data, sfinfo);
-    cout << filterName << " Time: " 
-         << duration_cast<milliseconds>(end - start).count() << " ms" << endl;
+    writeAudioFile(outputFile, inputData, sfinfo);
+    double time = duration_cast<milliseconds>(end - start).count();
+    cout << filterName << " Time: " << time << " ms" << endl;
+    return time;
 }
 
 int main(int argc, char* argv[]) {
@@ -85,13 +81,20 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Read input file
     SF_INFO sfinfo;
+    auto readStart = high_resolution_clock::now();
     vector<double> originalData = readAudioFile(argv[1], sfinfo);
+    auto readEnd = high_resolution_clock::now();
+    double readTime = duration_cast<milliseconds>(readEnd - readStart).count();
+    cout << "Read Time: " << readTime << " ms" << endl;
 
-    // Apply filters
-    processFilterWithRate("Notch Filter", originalData, sfinfo, notchFilter, "notch_output.wav");
-    processFilterWithRate("Band-pass Filter", originalData, sfinfo, bandPassFilter, "bandpass_output.wav");
+    double totalTime = 0.0;
+
+    totalTime += processFilter("IIR Filter", "iir_output.wav", originalData, sfinfo, iirFilter);
+    totalTime += processFilter("Notch Filter", "notch_output.wav", originalData, sfinfo, notchFilter);
+    totalTime += processFilter("Band-pass Filter", "bandpass_output.wav", originalData, sfinfo, bandPassFilter);
+
+    cout << "Execution Time (Total): " << totalTime << " ms" << endl;
 
     return 0;
 }
