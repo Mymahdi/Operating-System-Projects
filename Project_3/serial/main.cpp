@@ -63,6 +63,20 @@ void iirFilter(vector<double>& data, int) {
     }
 }
 
+// FIR Filter
+void firFilter(vector<double>& data, int) {
+    const int N = 10; // Filter length
+    vector<double> kernel(N, 1.0 / N);
+    vector<double> result(data.size(), 0.0);
+
+    for (size_t i = N / 2; i < data.size() - N / 2; ++i) {
+        for (int j = 0; j < N; ++j) {
+            result[i] += data[i - N / 2 + j] * kernel[j];
+        }
+    }
+    data.swap(result);
+}
+
 // Function to measure filter execution time
 double processFilter(const string& filterName, const string& outputFile, vector<double> inputData, SF_INFO& sfinfo, 
                      const function<void(vector<double>&, int)>& filterFunc) {
@@ -91,6 +105,7 @@ int main(int argc, char* argv[]) {
     double totalTime = 0.0;
 
     totalTime += processFilter("IIR Filter", "iir_output.wav", originalData, sfinfo, iirFilter);
+    totalTime += processFilter("FIR Filter", "fir_output.wav", originalData, sfinfo, firFilter);
     totalTime += processFilter("Notch Filter", "notch_output.wav", originalData, sfinfo, notchFilter);
     totalTime += processFilter("Band-pass Filter", "bandpass_output.wav", originalData, sfinfo, bandPassFilter);
 
