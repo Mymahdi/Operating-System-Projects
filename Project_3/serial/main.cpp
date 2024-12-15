@@ -21,6 +21,15 @@ void bandPassFilter(vector<double>& data, int sampleRate) {
     }
 }
 
+// Notch Filter
+void notchFilter(vector<double>& data, int sampleRate) {
+    for (size_t i = 0; i < data.size(); ++i) {
+        double f = static_cast<double>(i) / sampleRate;
+        double factor = 1.0 / (pow((f / NOTCH_F0), 2 * NOTCH_ORDER) + 1.0);
+        data[i] *= factor;
+    }
+}
+
 // Read Audio File
 vector<double> readAudioFile(const string& fileName, SF_INFO& sfinfo) {
     SNDFILE* file = sf_open(fileName.c_str(), SFM_READ, &sfinfo);
@@ -81,6 +90,7 @@ int main(int argc, char* argv[]) {
     vector<double> originalData = readAudioFile(argv[1], sfinfo);
 
     // Apply filters
+    processFilterWithRate("Notch Filter", originalData, sfinfo, notchFilter, "notch_output.wav");
     processFilterWithRate("Band-pass Filter", originalData, sfinfo, bandPassFilter, "bandpass_output.wav");
 
     return 0;
