@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++11
-LIBS = -lsndfile
+LIBS = -lsndfile -pthread
 
 TARGET = VoiceFilters.out
 SRCS = main.cpp
