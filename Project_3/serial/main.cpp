@@ -2,145 +2,86 @@
 #include <vector>
 #include <cmath>
 #include <sndfile.h>
-#include <cstring>
-#include <string>
+#include <chrono>
 
-// Class to handle audio file operations
-class AudioFileHandler {
-public:
-    AudioFileHandler() {
-        std::memset(&fileInfo, 0, sizeof(fileInfo));
+using namespace std;
+using namespace std::chrono;
+
+// Filter Parameters
+const double BANDPASS_DELTA = 0.1;
+const double NOTCH_F0 = 1000.0;
+const int NOTCH_ORDER = 2;
+
+// Band-pass Filter
+void bandPassFilter(vector<double>& data, int sampleRate) {
+    for (size_t i = 0; i < data.size(); ++i) {
+        double f = static_cast<double>(i) / sampleRate;
+        double H = f * f / (f * f + BANDPASS_DELTA * BANDPASS_DELTA);
+        data[i] *= H;
     }
-
-    void readWavFile(const std::string& inputFile, std::vector<float>& data) {
-        SNDFILE* inFile = sf_open(inputFile.c_str(), SFM_READ, &fileInfo);
-        if (!inFile) {
-            std::cerr << "Error opening input file: " << sf_strerror(NULL) << std::endl;
-            exit(1);
-        }
-
-        data.resize(fileInfo.frames * fileInfo.channels);
-        sf_count_t numFrames = sf_readf_float(inFile, data.data(), fileInfo.frames);
-        if (numFrames != fileInfo.frames) {
-            std::cerr << "Error reading frames from file." << std::endl;
-            sf_close(inFile);
-            exit(1);
-        }
-
-        sf_close(inFile);
-        std::cout << "Successfully read " << numFrames << " frames from " << inputFile << std::endl;
-    }
-
-void writeWavFile(const std::string& outputFile, const std::vector<float>& data) {
-    SF_INFO updatedFileInfo = fileInfo; // Make a copy of the file info
-    updatedFileInfo.frames = data.size() / fileInfo.channels; // Update the frame count
-
-    SNDFILE* outFile = sf_open(outputFile.c_str(), SFM_WRITE, &updatedFileInfo);
-    if (!outFile) {
-        std::cerr << "Error opening output file: " << sf_strerror(NULL) << std::endl;
-        exit(1);
-    }
-
-    sf_count_t numFrames = sf_writef_float(outFile, data.data(), updatedFileInfo.frames);
-    if (numFrames != updatedFileInfo.frames) {
-        std::cerr << "Error writing frames to file." << std::endl;
-        sf_close(outFile);
-        exit(1);
-    }
-
-    sf_close(outFile);
-    std::cout << "Successfully wrote " << numFrames << " frames to " << outputFile << std::endl;
 }
 
-
-    SF_INFO getFileInfo() const {
-        return fileInfo;
+// Read Audio File
+vector<double> readAudioFile(const string& fileName, SF_INFO& sfinfo) {
+    SNDFILE* file = sf_open(fileName.c_str(), SFM_READ, &sfinfo);
+    if (!file) {
+        cerr << "Error: Could not open input file " << fileName << endl;
+        exit(EXIT_FAILURE);
     }
+    vector<double> data(sfinfo.frames);
+    sf_read_double(file, data.data(), sfinfo.frames);
+    sf_close(file);
+    return data;
+}
 
-private:
-    SF_INFO fileInfo;
-};
+// Write Audio File
+void writeAudioFile(const string& fileName, const vector<double>& data, SF_INFO& sfinfo) {
+    SNDFILE* file = sf_open(fileName.c_str(), SFM_WRITE, &sfinfo);
+    if (!file) {
+        cerr << "Error: Could not write output file " << fileName << endl;
+        exit(EXIT_FAILURE);
+    }
+    sf_write_double(file, data.data(), data.size());
+    sf_close(file);
+}
 
-// Function prototypes
-std::vector<float> applyBandPassFilter(const std::vector<float>& signal, double f, double deltaF);
-std::vector<float> applyNotchFilter(const std::vector<float>& signal, double f0, int n);
-void initializeFilterParameters(double& f, double& deltaF, double& f0, int& n);
+// Process Filter and Measure Execution Time
+void processFilter(const string& filterName, const vector<double>& inputData, SF_INFO sfinfo, 
+                   void (*filterFunc)(vector<double>&), const string& outputFile) {
+    vector<double> data = inputData;
+    auto start = high_resolution_clock::now();
+    filterFunc(data);
+    auto end = high_resolution_clock::now();
+
+    writeAudioFile(outputFile, data, sfinfo);
+    cout << filterName << " Time: " 
+         << duration_cast<milliseconds>(end - start).count() << " ms" << endl;
+}
+
+void processFilterWithRate(const string& filterName, const vector<double>& inputData, SF_INFO sfinfo, 
+                           void (*filterFunc)(vector<double>&, int), const string& outputFile) {
+    vector<double> data = inputData;
+    auto start = high_resolution_clock::now();
+    filterFunc(data, sfinfo.samplerate);
+    auto end = high_resolution_clock::now();
+
+    writeAudioFile(outputFile, data, sfinfo);
+    cout << filterName << " Time: " 
+         << duration_cast<milliseconds>(end - start).count() << " ms" << endl;
+}
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <input_file>" << std::endl;
-        return 1;
+    if (argc != 2) {
+        cerr << "Usage: " << argv[0] << " <input_file.wav>" << endl;
+        return EXIT_FAILURE;
     }
-
-    std::string inputFile = argv[1];
-    AudioFileHandler audioHandler;
-    std::vector<float> audioData;
 
     // Read input file
-    audioHandler.readWavFile(inputFile, audioData);
+    SF_INFO sfinfo;
+    vector<double> originalData = readAudioFile(argv[1], sfinfo);
 
-    // Filter parameters
-    double f, deltaF, f0;
-    int n;
-    initializeFilterParameters(f, deltaF, f0, n);
-
-    // Apply Band-Pass Filter
-    std::vector<float> bandPassData = applyBandPassFilter(audioData, f, deltaF);
-    audioHandler.writeWavFile("band_pass_output.wav", bandPassData);
-
-    // Apply Notch Filter
-    std::vector<float> notchData = applyNotchFilter(audioData, f0, n);
-    audioHandler.writeWavFile("notch_filter_output.wav", notchData);
-
-    // Apply IIR Filter (Placeholder for demonstration)
-    std::vector<float> iirData = audioData; // Replace with actual IIR filter implementation
-    audioHandler.writeWavFile("iir_filter_output.wav", iirData);
-
-    // Apply FIR Filter (Placeholder for demonstration)
-    std::vector<float> firData = audioData; // Replace with actual FIR filter implementation
-    audioHandler.writeWavFile("fir_filter_output.wav", firData);
-
-    std::cout << "Filtered audio files saved: \n"
-              << "1. band_pass_output.wav\n"
-              << "2. notch_filter_output.wav\n"
-              << "3. iir_filter_output.wav\n"
-              << "4. fir_filter_output.wav\n";
+    // Apply filters
+    processFilterWithRate("Band-pass Filter", originalData, sfinfo, bandPassFilter, "bandpass_output.wav");
 
     return 0;
-}
-
-
-
-// Band-pass filter implementation
-std::vector<float> applyBandPassFilter(const std::vector<float>& signal, double f, double deltaF) {
-    std::vector<float> filtered(signal.size());
-    double denominator = f * f + deltaF * deltaF;
-
-    for (size_t i = 0; i < signal.size(); ++i) {
-        double numerator = f * f;
-        double H = numerator / denominator;
-        filtered[i] = signal[i] * H;
-    }
-
-    return filtered;
-}
-
-// Notch filter implementation
-std::vector<float> applyNotchFilter(const std::vector<float>& signal, double f0, int n) {
-    std::vector<float> filtered(signal.size());
-
-    for (size_t i = 0; i < signal.size(); ++i) {
-        double H = 1.0 / (std::pow(signal[i] / f0, 2 * n) + 1);
-        filtered[i] = signal[i] * H;
-    }
-
-    return filtered;
-}
-
-// Function to initialize filter parameters
-void initializeFilterParameters(double& f, double& deltaF, double& f0, int& n) {
-    f = 500.0;       // Center frequency for band-pass filter
-    deltaF = 100.0;  // Bandwidth for band-pass filter
-    f0 = 1000.0;     // Frequency to notch
-    n = 2;           // Order for notch filter
 }
