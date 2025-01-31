@@ -51,3 +51,107 @@ struct Room {
     bool gameRunning = true;
 };
 ```
+
+---
+
+## Client Code Overview
+
+The client connects to the server, sends user input, and receives game-related messages.
+
+### Features:
+
+- Connects to the server using TCP sockets.
+- Accepts user input for name and room selection.
+- Sends Rock-Paper-Scissors choices to the server.
+- Receives and displays game results.
+
+### Client Implementation Details:
+
+- **Socket Setup**: The client establishes a connection with the server using TCP sockets.
+- **User Interaction**: The client provides prompts for user input and sends responses to the server.
+- **Game Participation**: The client sends the user's choice and receives round results from the server.
+
+### Sample Interaction:
+
+```
+Enter your name: John
+Available rooms:
+Room 0 (1/2)
+Room 1 (0/2)
+Choose a room number: 0
+Choose: 0 (Rock), 1 (Paper), 2 (Scissors)
+Result: John Wins!
+```
+
+---
+
+## System Requirements
+
+To run this project, you need:
+- A Linux-based OS (Ubuntu, Debian, etc.) or Windows with WSL.
+- A C++ compiler supporting C++11 or later (e.g., g++, clang++).
+- Basic networking setup (IP address and port configuration).
+
+## How to Compile and Run the Project
+
+### Compiling the Server and Client
+
+Use the following commands to compile the server and client:
+
+```sh
+g++ server.cpp -o server -lpthread
+g++ client.cpp -o client
+```
+
+### Running the Server:
+
+```sh
+./server <IP> <PORT> <NUMBER_OF_ROOMS>
+```
+
+Example:
+
+```sh
+./server 127.0.0.1 8080 5
+```
+
+### Running the Client:
+
+```sh
+./client <IP> <PORT>
+```
+
+Example:
+
+```sh
+./client 127.0.0.1 8080
+```
+
+---
+
+## Challenges Faced
+
+During the development of this project, we encountered and overcame the following challenges:
+- **Handling multiple clients**: Using `poll()` effectively to manage simultaneous client connections.
+- **Synchronization issues**: Ensuring both players in a room submit their choices before processing results.
+- **Timeout handling**: Implementing a mechanism to handle cases where a player does not respond.
+- **Ensuring fair matchmaking**: Assigning players to rooms dynamically while avoiding conflicts.
+
+## Conclusion
+
+This project demonstrates a simple yet effective multiplayer Rock-Paper-Scissors game using C++ sockets. The server efficiently manages multiple clients and game sessions, ensuring fair play through a structured timeout mechanism. The client provides an interactive way for players to connect and participate in the game.
+
+### Possible Enhancements:
+
+- Implement a GUI for better user experience.
+- Improve error handling and reconnection mechanisms.
+- Add a leaderboard system for tracking player scores.
+- Support more than two players per game room.
+- Implement a ranking system for players.
+
+---
+
+**Author:** [Your Name]  
+**Date:** [Date]  
+**Language Used:** C++  
+**Operating System:** Linux/Windows  
