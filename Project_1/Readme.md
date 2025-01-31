@@ -151,7 +151,5 @@ This project demonstrates a simple yet effective multiplayer Rock-Paper-Scissors
 
 ---
 
-**Author:** [Your Name]  
-**Date:** [Date]  
 **Language Used:** C++  
-**Operating System:** Linux/Windows  
+**Operating System:** Linux  
