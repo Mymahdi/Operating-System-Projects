@@ -84,3 +84,57 @@ This program demonstrates a serial audio processing pipeline using multiple digi
 ---
 
 
+# Parallel Audio Processing Implementation
+
+## Introduction
+This document describes the parallel implementation of an audio processing system that applies multiple filters to an input `.wav` file. The implementation utilizes C++ multithreading to execute different filters concurrently, improving performance over a serial implementation.
+
+## Parallel Implementation
+The parallel approach is implemented using the C++ `<thread>` library to run different filters simultaneously on separate threads.
+
+### Key Features:
+- Uses multiple threads to apply different filters concurrently.
+- Reads audio data from a file and applies IIR, FIR, Notch, and Bandpass filters in parallel.
+- Writes the processed data to output `.wav` files.
+- Measures execution time for performance analysis.
+
+## Code Overview
+### **Audio File Handling**
+- `readAudioFile()`: Reads audio data from a `.wav` file into a vector.
+- `writeAudioFile()`: Writes processed audio data to a `.wav` file.
+
+### **Filter Implementations**
+- `bandPassFilter()`: Implements a bandpass filter.
+- `notchFilter()`: Implements a notch filter.
+- `iirFilter()`: Implements an Infinite Impulse Response (IIR) filter.
+- `firFilter()`: Implements a Finite Impulse Response (FIR) filter.
+
+### **Parallel Processing**
+- `parallelProcessFilters()`: Creates multiple threads to apply filters concurrently.
+- Each filter function runs in a separate thread, reducing processing time compared to serial execution.
+
+## Execution Flow
+1. **Read Audio File**: The input `.wav` file is read into memory.
+2. **Start Parallel Processing**:
+   - A separate thread is created for each filter function.
+   - Filters are applied to the input data concurrently.
+   - Processed data is written to separate output files.
+3. **Measure Execution Time**: The execution time of each filter and the total time is recorded and displayed.
+
+## Differences Between Serial and Parallel Implementations
+
+| Aspect           | Serial Implementation | Parallel Implementation |
+|----------------|----------------------|----------------------|
+| Execution Time | Longer (filters run sequentially) | Shorter (filters run concurrently) |
+| CPU Utilization | Single-threaded | Multi-threaded |
+| Performance    | Limited by a single core | Utilizes multiple cores for efficiency |
+| Complexity     | Simpler (easier to debug) | More complex (needs synchronization if data sharing is required) |
+
+## Performance Considerations
+- **Parallel Speedup**: Since each filter runs independently, the parallel approach significantly reduces processing time.
+- **Thread Overhead**: Creating and managing threads introduces some overhead but is outweighed by performance gains for large datasets.
+- **Scalability**: Can be extended to utilize more threads for additional filters if needed.
+
+## Conclusion
+The parallel implementation enhances performance by leveraging multithreading to apply filters concurrently. This results in reduced processing time and better CPU utilization compared to the serial approach. This approach is beneficial when handling large audio files where processing time is a critical factor.
+
