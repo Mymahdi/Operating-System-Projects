@@ -1,4 +1,4 @@
-# Serial Audio Processing Report
+# Serial Audio Processing Implementation
 
 ## Introduction
 This report analyzes a serial implementation of an audio processing program in C++. The program reads a WAV file, applies multiple filters (IIR, FIR, Notch, and Band-pass), and measures the execution time for each filtering process.
