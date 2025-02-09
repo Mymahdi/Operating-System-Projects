@@ -22,3 +22,34 @@ The main goals of this project are:
 3. **Develop a Real-Time Game System:** Process user inputs, determine game results, and ensure smooth interactions.
 4. **Improve Networking Skills in C++:** Explore networking concepts such as connection handling, data transmission, and concurrency.
 5. **Enhance System Robustness:** Implement timeouts, error handling, and fair matchmaking for a stable gaming experience.
+
+---
+
+</br>
+</br>
+
+# Project_2 
+# Warehouse Data Processing System
+
+## Overview
+
+This project is a distributed system that processes warehouse transaction data using the **Map-Reduce** paradigm. It reads CSV files containing warehouse transactions, processes them using multiple **mapper processes**, and aggregates the results using a **reducer process**. The system is implemented in **C++** and utilizes **Unix system calls** for process management and inter-process communication (IPC).
+
+## Objectives
+
+- Implement a distributed warehouse data processing system.
+- Utilize **Map-Reduce** for parallel processing.
+- Use **multiple mapper processes** to read warehouse CSV files.
+- Implement a **reducer process** to aggregate product transactions.
+- Manage inter-process communication (IPC) via **pipes**.
+- Log process execution details for monitoring and debugging.
+
+## Workflow
+
+1. **Data Collection**: Gather warehouse transaction CSV files.
+2. **Mapper Phase**: Process each CSV file in parallel.
+3. **Reducer Phase**: Aggregate data and compute totals.
+4. **Logging**: Record processing details in a log file.
+
+This system efficiently handles large datasets and provides a scalable solution for warehouse data analysis.
+
