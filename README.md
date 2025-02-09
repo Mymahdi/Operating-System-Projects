@@ -53,3 +53,46 @@ This project is a distributed system that processes warehouse transaction data u
 
 This system efficiently handles large datasets and provides a scalable solution for warehouse data analysis.
 
+---
+
+</br>
+</br>
+
+# Project_3
+# Audio Processing
+
+## Introduction
+This project implements an audio processing system in C++ that applies multiple digital filters to a `.wav` file. It includes both **serial** and **parallel** implementations to evaluate performance differences.
+
+## Key Features
+- Reads an input `.wav` file.
+- Applies four different filters:
+  - **IIR (Infinite Impulse Response) Filter** – A smoothing filter.
+  - **FIR (Finite Impulse Response) Filter** – A moving average filter.
+  - **Notch Filter** – Attenuates a specific frequency (e.g., 1000 Hz).
+  - **Band-Pass Filter** – Allows a specific frequency range to pass.
+- Writes the processed audio to separate output files.
+- Measures execution time for performance analysis.
+
+## Implementations
+### 1. Serial Processing
+- Filters are applied **sequentially**, processing the entire audio file one filter at a time.
+- Execution time is measured for each filtering step.
+- Simple implementation but can be slow for large files.
+
+### 2. Parallel Processing
+- Uses **multithreading** to run multiple filters concurrently.
+- Each filter processes the audio data in a separate thread.
+- Improves performance by utilizing multiple CPU cores.
+- Execution time is measured to compare speedup over the serial approach.
+
+## Performance Comparison
+| Feature           | Serial Processing | Parallel Processing |
+|------------------|------------------|------------------|
+| Execution Speed  | Slower (sequential processing) | Faster (filters run in parallel) |
+| CPU Utilization  | Uses a single core | Uses multiple cores |
+| Complexity       | Simple | More complex (thread management required) |
+| Scalability      | Limited | Scalable with more filters and threads |
+
+## Conclusion
+This project demonstrates efficient audio filtering using both **serial** and **parallel** methods. The parallel approach significantly reduces processing time, making it suitable for handling large audio files efficiently.
