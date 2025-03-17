@@ -18,6 +18,16 @@ int main(int argc, char *argv[]) {
     SubmissionManager submissionManager;
     
     commHandler.startServer();
+
+    while (true) {
+        std::string clientMessage = commHandler.receiveMessage();
+        if (clientMessage.empty()) continue;
+    
+        if (clientMessage.find("REGISTER") == 0) {
+            std::string response = teamManager.registerUser(clientMessage);
+            commHandler.sendMessage(response);
+        }
+    }
     
     return 0;
 }
