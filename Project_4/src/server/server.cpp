@@ -18,14 +18,22 @@ int main(int argc, char *argv[]) {
     SubmissionManager submissionManager;
     
     commHandler.startServer();
-
+    
     while (true) {
         std::string clientMessage = commHandler.receiveMessage();
         if (clientMessage.empty()) continue;
-    
+
         if (clientMessage.find("REGISTER") == 0) {
             std::string response = teamManager.registerUser(clientMessage);
             commHandler.sendMessage(response);
+        }
+        else if (clientMessage == "GET_PROBLEM") {
+            std::string problem = problemManager.getNextProblem();
+            commHandler.sendMessage(problem);
+        }
+        else if (clientMessage.find("SUBMIT") == 0) {
+            std::string result = submissionManager.evaluateSubmission(clientMessage);
+            commHandler.sendMessage(result);
         }
     }
     
