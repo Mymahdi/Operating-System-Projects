@@ -1,8 +1,10 @@
-#include "server_utils.h"
-#include "team_manager.h"
-#include "problem_manager.h"
-#include "submission_manager.h"
-#include "communication_handler.h"
+
+
+#include "../includes/server_utils.h"
+#include "../includes/team_manager.h"
+#include "../includes/problem_manager.h"
+#include "../includes/submission_manager.h"
+#include "../includes/communication_handler.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
