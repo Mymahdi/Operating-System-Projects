@@ -30,6 +30,9 @@ void CommunicationHandler::startListening() {
         return;
     }
 
+    listen(serverSocket, 5);
+    cout << "Server listening on port " << serverPort << "..." << endl;
+
     while (true) {
         sockaddr_in clientAddr;
         socklen_t clientLen = sizeof(clientAddr);
@@ -40,8 +43,14 @@ void CommunicationHandler::startListening() {
         }
         handleClient(clientSocket);
     }
-    
-    listen(serverSocket, 5);
-    cout << "Server listening on port " << serverPort << "..." << endl;
 }
 
+void CommunicationHandler::handleClient(int clientSocket) {
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+    read(clientSocket, buffer, sizeof(buffer));
+    cout << "Received message: " << buffer << endl;
+    string response = "Message received.";
+    send(clientSocket, response.c_str(), response.length(), 0);
+    close(clientSocket);
+}
