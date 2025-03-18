@@ -30,6 +30,17 @@ void CommunicationHandler::startListening() {
         return;
     }
 
+    while (true) {
+        sockaddr_in clientAddr;
+        socklen_t clientLen = sizeof(clientAddr);
+        int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientLen);
+        if (clientSocket < 0) {
+            cerr << "Failed to accept connection." << endl;
+            continue;
+        }
+        handleClient(clientSocket);
+    }
+    
     listen(serverSocket, 5);
     cout << "Server listening on port " << serverPort << "..." << endl;
 }
