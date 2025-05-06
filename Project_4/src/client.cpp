@@ -36,3 +36,27 @@ int main(int argc, char* argv[]) {
 
     // ... rest of main function ...
 }
+
+void log(const std::string& msg) {
+    std::cout << "[CLIENT] " << msg << std::endl;
+}
+
+void receiveMessages(int sock) {
+    char buffer[BUFFER_SIZE];
+    while (running) {
+        memset(buffer, 0, BUFFER_SIZE);
+        int bytesReceived = recv(sock, buffer, BUFFER_SIZE - 1, 0);
+        if (bytesReceived <= 0) {
+            log("Disconnected from server.");
+            running = false;
+            break;
+        }
+
+        std::string message(buffer);
+        std::cout << "\n[Server]: " << message << "\n> " << std::flush;
+    }
+}
+
+// Inside main():
+std::thread receiver(receiveMessages, sock);
+if (receiver.joinable()) receiver.join();
