@@ -100,28 +100,6 @@ std::string evaluate_single_answer(const std::string& answer) {
     return result;
 }
 
-// auto calculate_score = [](const ClientInfo& player) {
-//     double score = 0.0;
-//     double bonus = 0.0;
-
-//     for (const auto& sub : player.submissions) {
-//         if (sub.result != "PASS") continue;
-
-//         int base = (sub.problemIndex == 0) ? 1 :
-//                    (sub.problemIndex == 1) ? 3 :
-//                    (sub.problemIndex == 2) ? 5 : 0;
-
-//         if (sub.timeTaken <= (TIME_LIMIT * 0.5)) {
-//             bonus = 0.5;
-//         } 
-//         else if (sub.timeTaken <= (TIME_LIMIT * 0.75)) {
-//             bonus = 0.2;
-//         }
-//         score += base * (1 + bonus);
-//     }
-//     return score;
-// };
-
 
 auto calculate_score = [](const ClientInfo& player) {
     double score = 0.0;
