@@ -125,3 +125,68 @@ uint32_t flipBytes(uint32_t n) {
     return (b0 | b1 | b2 | b3);
 }
 
+void readImageFileHeader(FILE *imageFile, MNIST_ImageFileHeader *ifh) {
+    ifh->magicNumber = 0;
+    ifh->maxImages = 0;
+    ifh->imgWidth = 0;
+    ifh->imgHeight = 0;
+    fread(&ifh->magicNumber, 4, 1, imageFile);
+    ifh->magicNumber = flipBytes(ifh->magicNumber);
+    fread(&ifh->maxImages, 4, 1, imageFile);
+    ifh->maxImages = flipBytes(ifh->maxImages);
+    fread(&ifh->imgWidth, 4, 1, imageFile);
+    ifh->imgWidth = flipBytes(ifh->imgWidth);
+    fread(&ifh->imgHeight, 4, 1, imageFile);
+    ifh->imgHeight = flipBytes(ifh->imgHeight);
+}
+
+void readLabelFileHeader(FILE *imageFile, MNIST_LabelFileHeader *lfh) {
+    lfh->magicNumber = 0;
+    lfh->maxImages = 0;
+    fread(&lfh->magicNumber, 4, 1, imageFile);
+    lfh->magicNumber = flipBytes(lfh->magicNumber);
+    fread(&lfh->maxImages, 4, 1, imageFile);
+    lfh->maxImages = flipBytes(lfh->maxImages);
+}
+
+FILE *openMNISTImageFile(const char *fileName) {
+    FILE *imageFile = fopen(fileName, "rb");
+    if (imageFile == NULL) {
+        printf("Abort! Could not find MNIST IMAGE file: %s\n", fileName);
+        exit(0);
+    }
+    MNIST_ImageFileHeader imageFileHeader;
+    readImageFileHeader(imageFile, &imageFileHeader);
+    return imageFile;
+}
+
+FILE *openMNISTLabelFile(const char *fileName) {
+    FILE *labelFile = fopen(fileName, "rb");
+    if (labelFile == NULL) {
+        printf("Abort! Could not find MNIST LABEL file: %s\n", fileName);
+        exit(0);
+    }
+    MNIST_LabelFileHeader labelFileHeader;
+    readLabelFileHeader(labelFile, &labelFileHeader);
+    return labelFile;
+}
+
+MNIST_Image getImage(FILE *imageFile) {
+    MNIST_Image img;
+    size_t result = fread(&img, sizeof(img), 1, imageFile);
+    if (result != 1) {
+        printf("\nError when reading IMAGE file! Abort!\n");
+        exit(1);
+    }
+    return img;
+}
+
+MNIST_Label getLabel(FILE *labelFile) {
+    MNIST_Label lbl;
+    size_t result = fread(&lbl, sizeof(lbl), 1, labelFile);
+    if (result != 1) {
+        printf("\nError when reading LABEL file! Abort!\n");
+        exit(1);
+    }
+    return lbl;
+}
