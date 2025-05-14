@@ -1,4 +1,3 @@
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <string.h>
-#include <omp.h>
+#include <omp.h> // Added for OpenMP parallelization
 
 using namespace std;
 
@@ -29,9 +28,9 @@ typedef uint8_t MNIST_Label;
 #define OUTPUT_WEIGHTS_FILE "net_params/out_weights.txt"
 #define OUTPUT_BIASES_FILE "net_params/out_biases.txt"
 
-#define NUMBER_OF_INPUT_CELLS  784
-#define NUMBER_OF_HIDDEN_CELLS 256
-#define NUMBER_OF_OUTPUT_CELLS 10
+#define NUMBER_OF_INPUT_CELLS  784  // 28*28 input cells
+#define NUMBER_OF_HIDDEN_CELLS 256  // 256 hidden cells
+#define NUMBER_OF_OUTPUT_CELLS 10   // 10 output cells (0-9)
 
 #define MNIST_MAX_TESTING_IMAGES 10000
 #define MNIST_IMG_WIDTH          28
@@ -207,7 +206,7 @@ void allocateHiddenParameters() {
     }
     weights.close();
 
-    ifstream biases(HIDDEN_BIASES_FILE);
+    ifstream biases(HIDDEN_BIASES_FILE); // Fixed from OUTPUT_BIASES_FILE
     if (!biases.is_open()) {
         printf("Error: Could not open %s\n", HIDDEN_BIASES_FILE);
         exit(1);
@@ -247,4 +246,82 @@ void allocateOutputParameters() {
         bidx++;
     }
     biases.close();
+}
+
+int getNNPrediction() {
+    double maxOut = 0;
+    int maxInd = 0;
+    for (int i = 0; i < NUMBER_OF_OUTPUT_CELLS; i++) {
+        if (output_nodes[i].output > maxOut) {
+            maxOut = output_nodes[i].output;
+            maxInd = i;
+        }
+    }
+    return maxInd;
+}
+
+void testNN() {
+    FILE *imageFile = openMNISTImageFile(MNIST_TESTING_SET_IMAGE_FILE_NAME);
+    FILE *labelFile = openMNISTLabelFile(MNIST_TESTING_SET_LABEL_FILE_NAME);
+
+    displayImageFrame(7, 5);
+    int errCount = 0;
+
+    for (int imgCount = 0; imgCount < MNIST_MAX_TESTING_IMAGES; imgCount++) {
+        displayLoadingProgressTesting(imgCount, 5, 5);
+        MNIST_Image img = getImage(imageFile);
+        MNIST_Label lbl = getLabel(labelFile);
+        displayImage(&img, 8, 6);
+
+        // Parallelize computation of hidden and output layers
+        #pragma omp parallel
+        {
+            // Compute hidden layer outputs
+            #pragma omp for
+            for (int j = 0; j < NUMBER_OF_HIDDEN_CELLS; j++) {
+                hidden_nodes[j].output = hidden_nodes[j].bias;
+                for (int z = 0; z < NUMBER_OF_INPUT_CELLS; z++) {
+                    hidden_nodes[j].output += (img.pixel[z] / 255.0) * hidden_nodes[j].weights[z]; // Normalized input
+                }
+                hidden_nodes[j].output = (hidden_nodes[j].output >= 0) ? hidden_nodes[j].output : 0; // ReLU
+            }
+
+            // Compute output layer outputs
+            #pragma omp for
+            for (int i = 0; i < NUMBER_OF_OUTPUT_CELLS; i++) {
+                output_nodes[i].output = output_nodes[i].bias;
+                for (int j = 0; j < NUMBER_OF_HIDDEN_CELLS; j++) {
+                    output_nodes[i].output += hidden_nodes[j].output * output_nodes[i].weights[j];
+                }
+                output_nodes[i].output = 1 / (1 + exp(-output_nodes[i].output)); // Fixed sigmoid
+            }
+        }
+
+        int predictedNum = getNNPrediction();
+        if (predictedNum != lbl) errCount++;
+
+        printf("\n      Prediction: %d   Actual: %d ", predictedNum, lbl);
+        displayProgress(imgCount, errCount, 5, 66);
+    }
+
+    fclose(imageFile);
+    fclose(labelFile);
+}
+
+int main(int argc, const char *argv[]) {
+    time_t startTime = time(NULL);
+    clearScreen();
+    printf("    MNIST-NN: a parallel 2-layer neural network processing the MNIST handwriting images\n");
+
+    allocateHiddenParameters();
+    allocateOutputParameters();
+
+    testNN();
+
+    locateCursor(38, 5);
+    time_t endTime = time(NULL);
+    double executionTime = difftime(endTime, startTime);
+    printf("\n    DONE! Total execution time: %.1f sec\n\n", executionTime);
+
+    return 0;
 }
