@@ -190,3 +190,61 @@ MNIST_Label getLabel(FILE *labelFile) {
     }
     return lbl;
 }
+
+void allocateHiddenParameters() {
+    int idx = 0, bidx = 0;
+    ifstream weights(HIDDEN_WEIGHTS_FILE);
+    if (!weights.is_open()) {
+        printf("Error: Could not open %s\n", HIDDEN_WEIGHTS_FILE);
+        exit(1);
+    }
+    for (string line; getline(weights, line); ) {
+        stringstream in(line);
+        for (int i = 0; i < NUMBER_OF_INPUT_CELLS; ++i) {
+            in >> hidden_nodes[idx].weights[i];
+        }
+        idx++;
+    }
+    weights.close();
+
+    ifstream biases(HIDDEN_BIASES_FILE);
+    if (!biases.is_open()) {
+        printf("Error: Could not open %s\n", HIDDEN_BIASES_FILE);
+        exit(1);
+    }
+    for (string line; getline(biases, line); ) {
+        stringstream in(line);
+        in >> hidden_nodes[bidx].bias;
+        bidx++;
+    }
+    biases.close();
+}
+
+void allocateOutputParameters() {
+    int idx = 0, bidx = 0;
+    ifstream weights(OUTPUT_WEIGHTS_FILE);
+    if (!weights.is_open()) {
+        printf("Error: Could not open %s\n", OUTPUT_WEIGHTS_FILE);
+        exit(1);
+    }
+    for (string line; getline(weights, line); ) {
+        stringstream in(line);
+        for (int i = 0; i < NUMBER_OF_HIDDEN_CELLS; ++i) {
+            in >> output_nodes[idx].weights[i];
+        }
+        idx++;
+    }
+    weights.close();
+
+    ifstream biases(OUTPUT_BIASES_FILE);
+    if (!biases.is_open()) {
+        printf("Error: Could not open %s\n", OUTPUT_BIASES_FILE);
+        exit(1);
+    }
+    for (string line; getline(biases, line); ) {
+        stringstream in(line);
+        in >> output_nodes[bidx].bias;
+        bidx++;
+    }
+    biases.close();
+}
