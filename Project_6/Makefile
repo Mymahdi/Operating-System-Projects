@@ -1,30 +1,30 @@
-# Compiler and flags
-CXX = g++
-CXXFLAGS = -Wall -O2 -std=c++11 -pthread
+CC = g++
+CFLAGS = -Wall -O2 -std=c++11
+LDFLAGS = -pthread
 
-# Targets
-TARGETS = serial parallel
+TARGETS = parallel serial
 
+SRC_PARALLEL = parallel.cpp
+SRC_SERIAL = serial.cpp
 
-# Source files
-SRCS_SERIAL = serial.cpp
-SRCS_PARALLEL = parallel.cpp
-
-# Object files
-OBJS_SERIAL = $(SRCS_SERIAL:.cpp=.o)
-OBJS_PARALLEL = $(SRCS_PARALLEL:.cpp=.o)
+OBJ_PARALLEL = $(SRC_PARALLEL:.cpp=.o)
+OBJ_SERIAL = $(SRC_SERIAL:.cpp=.o)
 
 all: $(TARGETS)
 
-serial: $(OBJS_SERIAL)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+parallel: $(OBJ_PARALLEL)
+	$(CC) $< -o $@ $(LDFLAGS)
 
-parallel: $(OBJS_PARALLEL)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+serial: $(OBJ_SERIAL)
+	$(CC) $< -o $@
 
-# Compilation rule for .cpp to .o
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+$(OBJ_PARALLEL): $(SRC_PARALLEL)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_SERIAL): $(SRC_SERIAL)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(TARGETS) *.o
+	rm -f $(OBJ_PARALLEL) $(OBJ_SERIAL) $(TARGETS)
+
+.PHONY: all clean
