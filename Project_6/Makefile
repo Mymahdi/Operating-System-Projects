@@ -1,30 +1,41 @@
 CC = g++
-CFLAGS = -Wall -O2 -std=c++11
+CFLAGS = -Wall -O2 -std=c++11 -Iinclude
 LDFLAGS = -pthread
 
-TARGETS = parallel serial
+BIN_DIR = bin
 
-SRC_PARALLEL = parallel.cpp
-SRC_SERIAL = serial.cpp
+TARGETS = $(BIN_DIR)/mnist_nn_parallel $(BIN_DIR)/mnist_nn_serial
 
-OBJ_PARALLEL = $(SRC_PARALLEL:.cpp=.o)
-OBJ_SERIAL = $(SRC_SERIAL:.cpp=.o)
+PARALLEL_DIR = parallel
+
+SERIAL_DIR = serial
+
+SRC_PARALLEL = $(PARALLEL_DIR)/main.cpp \
+               $(PARALLEL_DIR)/mnist_utils.cpp \
+               $(PARALLEL_DIR)/nn_params.cpp \
+               $(PARALLEL_DIR)/display_utils.cpp \
+               $(PARALLEL_DIR)/thread_functions.cpp
+
+SRC_SERIAL = $(SERIAL_DIR)/serial.cpp
+
+OBJ_PARALLEL = $(patsubst $(PARALLEL_DIR)/%.cpp, $(BIN_DIR)/%.o, $(SRC_PARALLEL))
+OBJ_SERIAL = $(BIN_DIR)/serial.o
 
 all: $(TARGETS)
 
-parallel: $(OBJ_PARALLEL)
-	$(CC) $< -o $@ $(LDFLAGS)
+$(BIN_DIR)/mnist_nn_parallel: $(OBJ_PARALLEL)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-serial: $(OBJ_SERIAL)
-	$(CC) $< -o $@
+$(BIN_DIR)/mnist_nn_serial: $(OBJ_SERIAL)
+	$(CC) $(CFLAGS) $^ -o $@
 
-$(OBJ_PARALLEL): $(SRC_PARALLEL)
+$(BIN_DIR)/%.o: $(PARALLEL_DIR)/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJ_SERIAL): $(SRC_SERIAL)
+$(BIN_DIR)/serial.o: $(SERIAL_DIR)/serial.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ_PARALLEL) $(OBJ_SERIAL) $(TARGETS)
+	rm -f $(BIN_DIR)/*.o $(BIN_DIR)/mnist_nn_parallel $(BIN_DIR)/mnist_nn_serial
 
 .PHONY: all clean

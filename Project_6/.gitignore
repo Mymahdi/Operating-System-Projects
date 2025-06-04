@@ -1,4 +1,4 @@
 *.o
 *.out
-serial
-parallel
+mnist_nn_serial
+mnist_nn_parallel
